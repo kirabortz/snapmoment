@@ -1,14 +1,16 @@
 import React, { useLayoutEffect, useMemo, useState } from 'react';
 
-import { RangeDate, getDateFromInputValue, getInputValueDate, isInRange } from '@/shared/ui';
+import { getDateFromInputValueMultiple, isInRangeMultiple } from '../../lib/utils';
+import { RangeDateMultiple } from '../../ui/DatePickerMultiple';
+import { getInputValueDateMultiple } from '../helpers/getInputValueDateMultiple';
 
 interface Props {
   max?: Date;
   min?: Date;
-  value: RangeDate;
+  value: RangeDateMultiple;
 }
 
-export const useInputValueRange = ({ max, min, value }: Props) => {
+export const useInputValueRangeMultiple = ({ max, min, value }: Props) => {
   const [inputValue, setInputValue] = useState('');
 
   const onInputValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -16,17 +18,17 @@ export const useInputValueRange = ({ max, min, value }: Props) => {
   };
 
   useLayoutEffect(() => {
-    setInputValue(getInputValueDate(value));
+    setInputValue(getInputValueDateMultiple(value));
   }, [value, setInputValue]);
 
   const [inputValueDate, isValidInputValue] = useMemo(() => {
-    const date = getDateFromInputValue(inputValue);
+    const date = getDateFromInputValueMultiple(inputValue);
 
     if (!date) {
       return [undefined, false];
     }
 
-    const isDateInRange = isInRange(date.startDate, min, max) && isInRange(date.endDate, min, max);
+    const isDateInRange = isInRangeMultiple(date.startDate, min, max) && isInRangeMultiple(date.endDate, min, max);
 
     return [date, isDateInRange];
   }, [inputValue, min, max]);
