@@ -4,6 +4,10 @@ import { useAppDispatch, useAppSelector } from '@/shared/lib';
 
 export enum ModalKey {
   ChangePhoto = 'ChangePhoto',
+  CloseEditPost = 'CloseEditPost',
+  CreatePost = 'CreatePost',
+  CreatePostOnBlur = 'CreatePostOnBlur',
+  DeletePost = 'DeletePost',
   Success = 'Success',
   ViewLikes = 'ViewLikes',
   ViewPhoto = 'ViewPhoto'
