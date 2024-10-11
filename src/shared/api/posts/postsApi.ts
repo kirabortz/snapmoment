@@ -1,5 +1,7 @@
 import { snapmomentAPI } from '@/shared/api/common/snapmomentAPI';
 import {
+  CreatePostCommentArgs,
+  CreatePostCommentResponse,
   DeleteUsersImagePostArgs,
   DeleteUsersPostArgs,
   GetAnswersWithPaginationArgs,
@@ -14,6 +16,15 @@ import {
 
 export const postsApi = snapmomentAPI.injectEndpoints({
   endpoints: (builder) => ({
+    createPostComment: builder.mutation<CreatePostCommentResponse, CreatePostCommentArgs>({
+      invalidatesTags: ['PostComments'],
+
+      query: ({ content, postId }) => ({
+        body: { content },
+        method: 'POST',
+        url: `v1/posts/${postId}/comments`
+      })
+    }),
     deleteUsersImagePost: builder.mutation<void, DeleteUsersImagePostArgs>({
       invalidatesTags: ['PostsByUserName', 'publicPost', 'UserProfile'],
       query: ({ uploadId }) => ({
@@ -21,6 +32,7 @@ export const postsApi = snapmomentAPI.injectEndpoints({
         url: `v1/posts/image/${uploadId}`
       })
     }),
+
     deleteUsersPost: builder.mutation<void, DeleteUsersPostArgs>({
       invalidatesTags: ['PostsByUserName', 'publicPost', 'UserProfile'],
       query: ({ postId }) => ({
@@ -28,7 +40,6 @@ export const postsApi = snapmomentAPI.injectEndpoints({
         url: `v1/posts/${postId}`
       })
     }),
-
     getAnswersWithPagination: builder.query<GetAnswersWithPaginationResponse, GetAnswersWithPaginationArgs>({
       query: ({ commentId, postId }) => ({
         url: `v1/posts/${postId}/comments/${commentId}/answers`
@@ -79,6 +90,7 @@ export const postsApi = snapmomentAPI.injectEndpoints({
 });
 
 export const {
+  useCreatePostCommentMutation,
   useDeleteUsersImagePostMutation,
   useDeleteUsersPostMutation,
   useGetAnswersWithPaginationQuery,

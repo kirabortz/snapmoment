@@ -20,6 +20,7 @@ export const publicApi = snapmomentAPI.injectEndpoints({
       })
     }),
     getPostCommentsByPostId: builder.query<GetPostCommentsByPostIdResponse, getPostCommentsByPostIdArgs>({
+      providesTags: ['PostComments'],
       query: ({ postId }) => ({
         url: `v1/public-posts/${postId}/comments`
       })

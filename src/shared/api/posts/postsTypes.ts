@@ -1,4 +1,4 @@
-import { AnswerItems, Item, UserFollowingFollowersProps } from '@/shared/api/public/publicTypes';
+import { AnswerItems, Avatar, Item, UserFollowingFollowersProps } from '@/shared/api/public/publicTypes';
 
 export type GetAnswersWithPaginationArgs = {
   commentId: number;
@@ -57,5 +57,25 @@ export type GetPostLikesResponse = {
 export type UpdateLikePostArgs = {
   likeStatus: LikeStatusProps;
   postId: number;
+};
+export type CreatePostCommentArgs = {
+  content: string;
+  postId: number;
+};
+export type CreatePostCommentResponse = {
+  answerCount: number;
+  content: string;
+  createdAt: string;
+  from: From;
+  id: number;
+  isLiked: boolean;
+  likeCount: number;
+  postId: number;
+};
+
+export type From = {
+  avatars: Avatar[];
+  id: number;
+  username: string;
 };
 export type LikeStatusProps = 'DISLIKE' | 'LIKE' | 'NONE';

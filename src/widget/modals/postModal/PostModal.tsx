@@ -6,6 +6,7 @@ import { Author, Comment } from '@/entities';
 import { AddComment, ShowLikers, TimeAgo } from '@/features';
 import { MeResponse } from '@/shared/api/common/model/api.types';
 import {
+  useCreatePostCommentMutation,
   useDeleteUsersImagePostMutation,
   useDeleteUsersPostMutation,
   useGetPostLikesQuery,
@@ -54,16 +55,32 @@ export const PostModal = ({ me, pathOnClose, postId, showPostModalHandler }: Pro
   const { data: postData } = useGetPostByIdQuery({ postId: postId || null });
   const { data: postComments } = useGetPostCommentsByPostIdQuery({ postId: postId || null });
   const { data: postLikes } = useGetPostLikesQuery({ postId: postId || null });
+
   const [updatePost, { isLoading: isLoadingUpdatePost }] = useUpdateUsersPostMutation();
   const [deletePostImage, { isLoading: isLoadingDeletePostImage }] = useDeleteUsersImagePostMutation();
   const [deletePost, { isLoading: isLoadingDeletePost }] = useDeleteUsersPostMutation();
+  const [createPostComment] = useCreatePostCommentMutation();
 
   const isAuth = !!me?.userId;
 
   const showViewLikesHandler = () => {
     setOpen(true);
   };
+  // * Функция для создания комментария к посту
+  const createPostCommentHandler = async (content: string) => {
+    if (content.length === 0) {
+      showToast({ message: 'Write a comment before published! ', type: 'error' });
 
+      return;
+    }
+
+    try {
+      await createPostComment({ content, postId: postId as number }).unwrap();
+      showToast({ message: 'Comment post published successfully', type: 'success' });
+    } catch (error) {
+      showToast({ message: `Error occurred while published post: ${error}`, type: 'error' });
+    }
+  };
   // * Функция для редактирования поста
   const newDescriptionHandler = async (newDescription: string) => {
     if (newDescription !== postData?.description) {
@@ -180,7 +197,7 @@ export const PostModal = ({ me, pathOnClose, postId, showPostModalHandler }: Pro
                     </div>
                   </div>
 
-                  {isAuth && <AddComment />}
+                  {isAuth && <AddComment createPostComment={createPostCommentHandler} />}
                 </>
               ) : (
                 <>
