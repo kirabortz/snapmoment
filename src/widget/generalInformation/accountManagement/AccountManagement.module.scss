@@ -1,13 +1,39 @@
-.box {
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: 96px;
-  align-items: center;
+.container {
+  .blockTitle {
+    margin-bottom: 20px;
+  }
 
-  background-color: var(--dark-500);
-}
+  .block {
+    margin-bottom: 20px;
+  }
 
-.radioRoot {
-  gap: 12px;
-  padding-left: 22px;
+  .expirationArea {
+    display: grid;
+    grid-template-columns: 250px 250px;
+    gap: 40px;
+
+    padding-left: 24px;
+    padding-block: 12px;
+
+    .expirationAreaTitle {
+      margin-bottom: 12px;
+      color: var(--light-900);
+    }
+  }
+
+  .cardBox {
+    background-color: var(--dark-500);
+    border: 1px solid var(--dark-300);
+  }
+
+  .radioRoot {
+    gap: 24px;
+    padding-left: 24px;
+    padding-block: 12px;
+  }
+
+  .checkBoxWrapper {
+    display: flex;
+    margin-bottom: 20px;
+  }
 }
