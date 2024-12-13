@@ -11,8 +11,11 @@ type CustomDropdownWrapperProps = {
   align?: 'center' | 'end' | 'start';
   children?: ReactNode;
   className?: string;
+  classNameArrow?: string;
   classNameTriggerActive?: string;
   isArrow?: boolean;
+  onCloseCallback?: () => void;
+  onOpenCallback?: () => void;
   side?: 'bottom' | 'left' | 'right' | 'top';
   sideOffset?: number;
   stayOpen?: boolean;
@@ -25,17 +28,20 @@ type CustomDropdownWrapperProps = {
  * Компонент `CustomDropdownWrapper` — настраиваемый выпадающий список, который может содержать
  * различные элементы, такие как кнопки или другие интерактивные элементы.
  *
- * @param {'center' | 'end' | 'start'} align - Выравнивание выпадающего меню по горизонтали.
- * @param {ReactNode} children - Дочерние элементы, которые будут отображаться в выпадающем меню.
- * @param {string} className - Дополнительные классы для стилизации контейнера выпадающего меню.
- * @param {string} classNameTriggerActive - Классы для стилизации триггера, когда меню открыто.
- * @param {boolean} isArrow - Определяет, будет ли стрелка отображаться на выпадающем меню (по умолчанию `true`).
- * @param {'bottom' | 'left' | 'right' | 'top'} side - Сторона, с которой открывается выпадающее меню.
- * @param {number} sideOffset - Отступ между триггером и выпадающим меню (по умолчанию `8`).
- * @param {boolean} stayOpen - Если `true`, меню остается открытым после клика по элементам (по умолчанию `false`).
- * @param {CSSProperties} style - Дополнительные стили для выпадающего меню.
- * @param {ReactNode} trigger - Элемент триггера, по которому открывается выпадающее меню.
- * @param {ReactNode} triggerActive - Элемент триггера, отображаемый, когда меню открыто. ДЛЯ ТЕХ СЛУЧАЕВ, КОГДА ИКОНКА ДОЛЖНА ОТЛИЧАТЬСЯ ОТ ТРИГГЕРА В ЗАКРЫТОМ СОСТОЯНИИ.
+ * * align - Выравнивание выпадающего меню по горизонтали.
+ * * children - Дочерние элементы, которые будут отображаться в выпадающем меню.
+ * * className - Дополнительные классы для стилизации контейнера выпадающего меню.
+ * * classNameTriggerActive - Классы для стилизации триггера, когда меню открыто.
+ * * classNameArrow - Классы для стилизации стрелки, когда меню открыто. Фон задавать через fill, обводку - stroke
+ * * isArrow - Определяет, будет ли стрелка отображаться на выпадающем меню (по умолчанию `true`).
+ * * side - Сторона, с которой открывается выпадающее меню.
+ * * sideOffset - Отступ между триггером и выпадающим меню (по умолчанию `8`).
+ * * stayOpen - Если `true`, меню остается открытым после клика по элементам (по умолчанию `false`).
+ * * style - Дополнительные стили для выпадающего меню.
+ * * trigger - Элемент триггера, по которому открывается выпадающее меню.
+ * * triggerActive - Элемент триггера, отображаемый, когда меню открыто. ДЛЯ ТЕХ СЛУЧАЕВ, КОГДА ИКОНКА ДОЛЖНА ОТЛИЧАТЬСЯ ОТ ТРИГГЕРА В ЗАКРЫТОМ СОСТОЯНИИ.
+ * * onOpenCallback - Дополнительное действие при открытии dropDown
+ * * onCloseCallback - Дополнительное действие при закрытии dropDown
  */
 export const CustomDropdownWrapper = forwardRef<HTMLButtonElement, CustomDropdownWrapperProps>(
   (
@@ -43,8 +49,11 @@ export const CustomDropdownWrapper = forwardRef<HTMLButtonElement, CustomDropdow
       align = 'center',
       children,
       className,
+      classNameArrow,
       classNameTriggerActive,
       isArrow = false,
+      onCloseCallback,
+      onOpenCallback,
       side = 'bottom',
       sideOffset = 8,
       stayOpen = false,
@@ -64,15 +73,25 @@ export const CustomDropdownWrapper = forwardRef<HTMLButtonElement, CustomDropdow
       }
     };
 
+    const handleOpenChange = () => {
+      if (open) {
+        onCloseCallback?.();
+      }
+      if (!open) {
+        onOpenCallback?.();
+      }
+      setOpen((prev) => !prev);
+    };
+
     const classNames = {
       arrow: clsx(s.arrow),
-      arrowWrap: clsx(s.arrowWrap),
+      arrowWrap: clsx(s.arrowWrap, classNameArrow),
       content: clsx(s.dropdownMenuContent, className),
       itemsWrap: clsx(s.itemsWrap)
     };
 
     return (
-      <DropdownMenu.Root onOpenChange={setOpen} open={open}>
+      <DropdownMenu.Root onOpenChange={handleOpenChange} open={open}>
         <DropdownMenu.Trigger className={clsx(s.trigger, open && classNameTriggerActive)} ref={ref} asChild>
           {triggerCondition()}
         </DropdownMenu.Trigger>
@@ -88,7 +107,7 @@ export const CustomDropdownWrapper = forwardRef<HTMLButtonElement, CustomDropdow
             sideOffset={sideOffset}
             style={style}
           >
-            {isArrow && <DropdownMenu.Arrow className={classNames.arrowWrap} />}
+            {isArrow && <DropdownMenu.Arrow className={classNames.arrowWrap} height={10} width={20} />}
             <div className={classNames.itemsWrap}>
               {children} {/* Рендерим children напрямую */}
             </div>

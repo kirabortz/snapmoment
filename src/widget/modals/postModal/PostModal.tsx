@@ -4,15 +4,15 @@ import { useRef, useState } from 'react';
 import CloseOutline from '@/../public/assets/components/CloseOutline';
 import { Author, Comment } from '@/entities';
 import { AddComment, CloseEditModal, DeletePostModal, PublishPost, ShowLikers, TimeAgo } from '@/features';
-import { MeResponse } from '@/shared/api/common/model/api.types';
+import { useMeQuery } from '@/shared/api/auth/authApi';
 import {
   useDeleteUsersImagePostMutation,
   useDeleteUsersPostMutation,
   useGetPostLikesQuery,
   useUpdateUsersPostMutation
 } from '@/shared/api/posts/postsApi';
-import { useGetPostByIdQuery, useGetPostCommentsByPostIdQuery } from '@/shared/api/public/publicApi';
-import { ModalKey, useCustomToast, useModal } from '@/shared/lib';
+import { publicApi, useGetPostByIdQuery, useGetPostCommentsByPostIdQuery } from '@/shared/api/public/publicApi';
+import { ModalKey, useAppDispatch, useCustomToast, useModal } from '@/shared/lib';
 import { Button, Modal, PhotosSwiper, PostModalBurgerDropDown } from '@/shared/ui';
 import { useRouter } from 'next/router';
 
@@ -22,7 +22,7 @@ import { PostInteractionBar } from '../../postInteractionBar/PostInteractionBar'
 import { UsersLikesModal } from '../usersLikesModal/UsersLikesModal';
 
 type Props = {
-  me: MeResponse | undefined;
+  // me: MeResponse | undefined;
   pathOnClose?: string;
   postId: number;
   showPostModalHandler: (isOpen: boolean, postId?: number) => void;
@@ -38,7 +38,9 @@ type Props = {
  *  - postId (number | undefined): идентификатор поста (опционально).
  * @param {string} props.pathOnClose Путь, на который перейдет приложение после закрытия модалки поста.
  */
-export const PostModal = ({ me, pathOnClose, postId, showPostModalHandler }: Props) => {
+export const PostModal = (props: Props) => {
+  const { pathOnClose, postId, showPostModalHandler } = props;
+  const { data: me } = useMeQuery();
   const submitRef = useRef<HTMLButtonElement>(null);
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
 
@@ -49,7 +51,8 @@ export const PostModal = ({ me, pathOnClose, postId, showPostModalHandler }: Pro
   const router = useRouter();
 
   //const { data: me } = useMeQuery();
-  const { data: postData, refetch } = useGetPostByIdQuery({ postId: postId || null });
+  const dispatch = useAppDispatch();
+  const { data: postData, refetch } = useGetPostByIdQuery({ postId: postId }, { skip: !postId });
   const { data: postComments } = useGetPostCommentsByPostIdQuery({ postId: postId || null });
   const { data: postLikes } = useGetPostLikesQuery({ postId: postId || null });
   const [updatePost, { isLoading: isLoadingUpdatePost }] = useUpdateUsersPostMutation();
@@ -82,8 +85,16 @@ export const PostModal = ({ me, pathOnClose, postId, showPostModalHandler }: Pro
     showPostModalHandler(false);
     // router.push('/', undefined, { shallow: true });
     // ! Это для того, чтобы возвращаться на ту страницу где были, либо на главную страницу
-    pathOnClose ? router.push(pathOnClose) : router.push('/', undefined, { shallow: true });
+    pathOnClose
+      ? router.push(pathOnClose, undefined, { shallow: true })
+      : router.push('/', undefined, { shallow: true });
   };
+
+  // // * Функция закрытия модалки удаления поста
+  // const closeDeleteModalHandler = () => {
+  //   showPostModalHandler(false)
+  //   setIsDeleteModalOpen(false);
+  // };
 
   // * Функия удаления поста
   const deletePostHandler = async () => {
@@ -105,10 +116,17 @@ export const PostModal = ({ me, pathOnClose, postId, showPostModalHandler }: Pro
         await Promise.all(deleteImagePromises);
       }
 
+      // Сброс кэша для обновления данных
+      dispatch(publicApi.util.invalidateTags(['PublicPostsByUserName', 'PostsByUserName']));
+
       // Уведомление об успешном удалении
       showToast({ message: 'Post deleted successfully', type: 'success' });
 
-      closeModalHandler();
+      showPostModalHandler(false);
+
+      setIsDeleteModalOpen(false);
+
+      pathOnClose ? router.replace(pathOnClose) : router.replace('/');
     } catch (error) {
       // Уведомление об ошибке при удалении
       showToast({ message: `Error occurred while deleting post: ${error}`, type: 'error' });
@@ -125,81 +143,84 @@ export const PostModal = ({ me, pathOnClose, postId, showPostModalHandler }: Pro
     closeModalHandler();
   };
 
+  if (!postData) {
+    return null;
+  }
+
+  // return postData && (
   return (
-    postData && (
-      <>
-        <CloseEditModal
-          editModeHandler={() => setIsEditMode(false)}
-          isOpen={isCloseEditPostModalOpen}
-          setOpen={setIsCloseEditPostModalOpen}
-        />
-        <DeletePostModal deletePost={deletePostHandler} isOpen={isDeleteModalOpen} setOpen={setIsDeleteModalOpen} />
-        {isOpen && <UsersLikesModal postLikes={postLikes} setOpen={setOpen} open />}
+    <>
+      <CloseEditModal
+        editModeHandler={() => setIsEditMode(false)}
+        isOpen={isCloseEditPostModalOpen}
+        setOpen={setIsCloseEditPostModalOpen}
+      />
+      <DeletePostModal deletePost={deletePostHandler} isOpen={isDeleteModalOpen} setOpen={setIsDeleteModalOpen} />
+      {isOpen && <UsersLikesModal postLikes={postLikes} setOpen={setOpen} open />}
 
-        <Modal className={s.modal} onOpenChange={setCloseModalHandler} title={''} open>
-          <button className={s.closeBtn} onClick={setCloseModalHandler}>
-            <CloseOutline className={s.closeIcon} />
-          </button>
+      <Modal className={s.modal} onOpenChange={setCloseModalHandler} title={''} open>
+        <button className={s.closeBtn} onClick={setCloseModalHandler}>
+          <CloseOutline className={s.closeIcon} />
+        </button>
 
-          <div className={s.container}>
-            <div className={s.photos}>
-              <PhotosSwiper sliders={postData.images} />
-            </div>
-
-            <div className={s.about}>
-              {!isEditMode ? (
-                <>
-                  <div className={s.authorBlock}>
-                    <div className={s.authorWrapper}>
-                      <Author name={postData.userName} photo={postData.avatarOwner} />
-                      {isAuth && (
-                        <PostModalBurgerDropDown
-                          changeEditMode={() => setIsEditMode(true)}
-                          deleteModalHandler={() => setIsDeleteModalOpen(true)}
-                        />
-                      )}
-                    </div>
-                  </div>
-
-                  <div className={s.comments}>
-                    {postComments?.items?.map((comment) => (
-                      <Comment comment={comment} isAuth={isAuth} key={comment.id}>
-                        {/*{isAuth && <ToggleLike />}*/}
-                      </Comment>
-                    ))}
-                  </div>
-
-                  <div className={s.actions}>
-                    <div className={s.actionsWrapper}>
-                      {isAuth && <PostInteractionBar postData={postData} postLikes={postLikes} />}
-
-                      <ShowLikers postLikes={postLikes} showViewLikesHandler={showViewLikesHandler} />
-                      <TimeAgo time={postData.createdAt} />
-                    </div>
-                  </div>
-
-                  {isAuth && <AddComment />}
-                </>
-              ) : (
-                <>
-                  <PublishPost
-                    changeEditMode={() => setIsEditMode(false)}
-                    description={postData.description}
-                    isLocationBar={false}
-                    newDescriptionHandler={newDescriptionHandler}
-                    postId={postData.id}
-                    submitRef={submitRef}
-                    type={'edit'}
-                  />
-                  <div className={s.editButton}>
-                    <Button onClick={() => submitRef.current?.click()}>Save Changes</Button>
-                  </div>
-                </>
-              )}
-            </div>
+        <div className={s.container}>
+          <div className={s.photos}>
+            <PhotosSwiper sliders={postData.images} />
           </div>
-        </Modal>
-      </>
-    )
+
+          <div className={s.about}>
+            {!isEditMode ? (
+              <>
+                <div className={s.authorBlock}>
+                  <div className={s.authorWrapper}>
+                    <Author name={postData.userName} photo={postData.avatarOwner} />
+                    {isAuth && (
+                      <PostModalBurgerDropDown
+                        changeEditMode={() => setIsEditMode(true)}
+                        deleteModalHandler={() => setIsDeleteModalOpen(true)}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div className={s.comments}>
+                  {postComments?.items?.map((comment) => (
+                    <Comment comment={comment} isAuth={isAuth} key={comment.id}>
+                      {/*{isAuth && <ToggleLike />}*/}
+                    </Comment>
+                  ))}
+                </div>
+
+                <div className={s.actions}>
+                  <div className={s.actionsWrapper}>
+                    {isAuth && <PostInteractionBar postData={postData} postId={postId} postLikes={postLikes} />}
+
+                    <ShowLikers postLikes={postLikes} showViewLikesHandler={showViewLikesHandler} />
+                    <TimeAgo time={postData.createdAt} />
+                  </div>
+                </div>
+
+                {isAuth && <AddComment />}
+              </>
+            ) : (
+              <>
+                <PublishPost
+                  changeEditMode={() => setIsEditMode(false)}
+                  description={postData.description}
+                  isLocationBar={false}
+                  newDescriptionHandler={newDescriptionHandler}
+                  postId={postData.id}
+                  submitRef={submitRef}
+                  type={'edit'}
+                />
+                <div className={s.editButton}>
+                  <Button onClick={() => submitRef.current?.click()}>Save Changes</Button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </Modal>
+    </>
   );
 };

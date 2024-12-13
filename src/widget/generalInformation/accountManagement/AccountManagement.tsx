@@ -62,7 +62,7 @@ export const AccountManagement = () => {
       const isPaid = isAfter(new Date(data?.data[0]?.endDateOfSubscription), new Date());
       const isAutoRenewal = data?.hasAutoRenewal;
 
-      isPaid && setRemoteAccountVariant(accountVariants.business);
+      setRemoteAccountVariant(isPaid ? accountVariants.business : accountVariants.personal);
       isAutoRenewal && setIsAutoRenewal(true);
 
       setLocalAccountVariant(accountVariants.business);
@@ -83,6 +83,11 @@ export const AccountManagement = () => {
     }
   }, [router.query, isPaymentModalsOpen]);
 
+  // Синхронизируем локальное и удаленное состояние
+  useEffect(() => {
+    setLocalAccountVariant(remoteAccountVariant);
+  }, [remoteAccountVariant]);
+
   const submitPayment = async (paymentType: PaymentVariantTypes) => {
     if (!savedPaymentSubscription) {
       setPaymentModalsContent(notifyPayModalContentVariant);
@@ -92,9 +97,11 @@ export const AccountManagement = () => {
     }
 
     try {
+      const { host, protocol } = typeof window !== 'undefined' ? window.location : { host: '', protocol: '' };
       const response = await sendPayment({
         amount: 0,
-        baseUrl: 'http://localhost:3000/profile/generalinfo',
+        // baseUrl: 'http://localhost:3000/profile/generalinfo',
+        baseUrl: `${protocol}//${host}/profile/generalinfo`,
         paymentType,
         typeSubscription: savedPaymentSubscription
       });
@@ -170,6 +177,7 @@ export const AccountManagement = () => {
           handleOpenBusinessMenu={handleOpenBusinessMenu}
           handleSwitchPersonal={handleSwitchToPersonal}
           isRemoteEqualsBusinessAccount={isRemoteEqualsBusinessAccount}
+          localAccountVariant={localAccountVariant}
         />
       </div>
 
